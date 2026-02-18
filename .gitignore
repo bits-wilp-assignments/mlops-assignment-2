@@ -55,7 +55,6 @@ coverage.xml
 .pyre/
 
 # ML Training artifacts
-data/processed/
 mlruns/
 models/
 test/training/plots/
