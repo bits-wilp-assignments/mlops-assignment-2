@@ -54,6 +54,9 @@ coverage.xml
 .dmypy.json
 .pyre/
 
+# pytest
+.pytest_cache/
+
 # ML Training artifacts
 mlruns/
 models/
