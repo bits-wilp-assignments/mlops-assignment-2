@@ -22,9 +22,18 @@ OPTIMIZER = 'adam'
 LOSS_FUNCTION = 'binary_crossentropy'
 METRICS = ['accuracy']
 
+# GPU Configuration
+USE_MIXED_PRECISION = False  # Enable for faster training on GPUs (Metal/CUDA)
+
 # Model saving
 MODEL_FILENAME = 'baseline_model.h5'
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILENAME)
 
 # MLflow tracking
-MLFLOW_EXPERIMENT_NAME = 'Cats_vs_Dogs'
+MLFLOW_TRACKING_URI = "http://localhost:5000"
+MLFLOW_EXPERIMENT_NAME = 'pet_adoptation_classification'
+
+# MLflow run names
+MLFLOW_RUN_NAME_PIPELINE = 'pipeline'
+MLFLOW_RUN_NAME_TRAINING = 'training'
+MLFLOW_RUN_NAME_EVALUATION = 'evaluation'
