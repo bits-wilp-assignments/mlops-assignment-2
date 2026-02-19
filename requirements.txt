@@ -1,0 +1,14 @@
+docopt==0.6.2
+dvc-gdrive==3.0.1
+flufl-lock==9.0.0
+ipython==8.12.3
+namex==0.1.0
+nbconvert==7.17.0
+optree==0.18.0
+pillow==12.1.1
+ruamel-yaml==0.19.1
+scikit-learn==1.7.2
+tensorflow==2.15.0
+tinycss2==1.4.0
+yarg==0.1.9
+zc-lockfile==4.0
