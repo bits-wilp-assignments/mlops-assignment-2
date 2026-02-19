@@ -1,13 +1,13 @@
-# training/src/data/preprocess.py
 import os, shutil
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from config.settings import RAW_DIR, PROCESSED_DIR, IMG_SIZE, BATCH_SIZE, CLASS_DIRS
+from tensorflow.keras.preprocessing.image import ImageDataGenerator # type: ignore
+from training.src.config.settings import RAW_DIR, PROCESSED_DIR, IMG_SIZE, BATCH_SIZE, CLASS_DIRS
 from common.logger import get_logger
 
 logger = get_logger(__name__)
 
 def preprocess_and_split():
+    logger.info("Starting data preprocessing and splitting...")
     classes = CLASS_DIRS
     images, labels = [], []
     for label, cls in enumerate(classes):
