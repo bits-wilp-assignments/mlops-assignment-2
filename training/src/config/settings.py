@@ -1,8 +1,6 @@
 import os
 from pathlib import Path
-
-# Label constants
-CLASS_DIRS = ["Cat", "Dog"]
+from common.base import *
 
 # Paths - workspace root is 3 levels up from this file
 BASE_DIR = str(Path(__file__).resolve().parents[3])
@@ -11,8 +9,6 @@ RAW_DIR = os.path.join(DATA_DIR, "raw/PetImages")
 PROCESSED_DIR = os.path.join(DATA_DIR, "processed")
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 
-# Image size
-IMG_SIZE = (224, 224)
 INPUT_SHAPE = (224, 224, 3)
 
 # Training hyperparameters
@@ -26,14 +22,10 @@ METRICS = ['accuracy']
 USE_MIXED_PRECISION = False  # Enable for faster training on GPUs (Metal/CUDA)
 
 # Model saving
-MODEL_FILENAME = 'baseline_model.h5'
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILENAME)
 
-# MLflow tracking
-MLFLOW_TRACKING_URI = "http://localhost:5000"
-MLFLOW_EXPERIMENT_NAME = 'pet_adoptation_classification'
-
 # MLflow run names
+
 MLFLOW_RUN_NAME_PIPELINE = 'pipeline'
 MLFLOW_RUN_NAME_TRAINING = 'training'
 MLFLOW_RUN_NAME_EVALUATION = 'evaluation'
