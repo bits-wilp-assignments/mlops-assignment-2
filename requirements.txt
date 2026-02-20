@@ -151,6 +151,7 @@ ruamel.yaml==0.19.1
 scikit-learn==1.8.0
 scipy==1.17.0
 scmrepo==3.6.1
+seaborn==0.13.2
 semver==3.0.4
 setuptools==82.0.0
 shellingham==1.5.4

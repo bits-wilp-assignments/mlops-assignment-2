@@ -1,4 +1,6 @@
 import mlflow
+import matplotlib.pyplot as plt
+import seaborn as sns
 from datetime import datetime
 from training.src.config.settings import (
     MLFLOW_EXPERIMENT_NAME, MLFLOW_TRACKING_URI, MODEL_PATH,
@@ -8,6 +10,42 @@ from training.src.config.settings import (
 from common.logger import get_logger
 
 logger = get_logger(__name__)
+
+def plot_confusion_matrix(confusion_mat, filename="confusion_matrix.png"):
+    """Create and save confusion matrix plot with smaller file size."""
+    fig, ax = plt.subplots(figsize=(6, 5))
+    sns.heatmap(confusion_mat, annot=True, fmt='d', cmap='Blues', 
+                cbar=True, square=True, ax=ax)
+    ax.set_xlabel('Predicted Label')
+    ax.set_ylabel('True Label')
+    ax.set_title('Confusion Matrix')
+    ax.set_xticklabels(['Cat', 'Dog'])
+    ax.set_yticklabels(['Cat', 'Dog'])
+    
+    # Save with lower DPI for smaller file size
+    plt.tight_layout()
+    plt.savefig(filename, dpi=80, bbox_inches='tight', format='png')
+    plt.close(fig)
+    logger.info(f"Confusion matrix plot saved to {filename}")
+
+def plot_roc_curve(fpr, tpr, auc_score, filename="roc_curve.png"):
+    """Create and save ROC curve plot with smaller file size."""
+    fig, ax = plt.subplots(figsize=(6, 5))
+    ax.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {auc_score:.4f})')
+    ax.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--', label='Random Classifier')
+    ax.set_xlim([0.0, 1.0])
+    ax.set_ylim([0.0, 1.05])
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate')
+    ax.set_title('Receiver Operating Characteristic (ROC) Curve')
+    ax.legend(loc="lower right")
+    ax.grid(True, alpha=0.3)
+    
+    # Save with lower DPI for smaller file size
+    plt.tight_layout()
+    plt.savefig(filename, dpi=80, bbox_inches='tight', format='png')
+    plt.close(fig)
+    logger.info(f"ROC curve plot saved to {filename}")
 
 def generate_run_name(prefix="run", **kwargs):
     """Generate a unique run name with timestamp and optional parameters."""
@@ -110,9 +148,31 @@ def log_evaluation_metrics(y_true, y_pred, y_pred_proba, confusion_mat, classifi
         logger.info(f"Logged evaluation metrics: {metrics_dict}")
         logger.info(f"MLflow Run Name: {run_name}")
 
+        # Log confusion matrix plot
+        try:
+            cm_filename = "confusion_matrix.png"
+            plot_confusion_matrix(confusion_mat, cm_filename)
+            mlflow.log_artifact(cm_filename)
+            import os
+            os.remove(cm_filename)
+            logger.info("Logged confusion matrix plot to MLflow")
+        except Exception as e:
+            logger.warning(f"Could not log confusion matrix plot: {e}")
+
+        # Log ROC curve plot if data is available
+        if fpr is not None and tpr is not None and metrics_dict.get('auc_roc') is not None:
+            try:
+                roc_filename = "roc_curve.png"
+                plot_roc_curve(fpr, tpr, metrics_dict['auc_roc'], roc_filename)
+                mlflow.log_artifact(roc_filename)
+                import os
+                os.remove(roc_filename)
+                logger.info("Logged ROC curve plot to MLflow")
+            except Exception as e:
+                logger.warning(f"Could not log ROC curve plot: {e}")
+
         # Log confusion matrix and classification report as artifact
         try:
-            import numpy as np
             results_text = f"""EVALUATION RESULTS
 {'='*60}
 
