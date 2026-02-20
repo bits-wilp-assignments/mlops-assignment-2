@@ -8,5 +8,8 @@ IMG_SIZE = (224, 224)
 MLFLOW_TRACKING_URI = "http://localhost:5000"
 MLFLOW_EXPERIMENT_NAME = 'pet_adoptation_classification'
 
+# Model Registry
+REGISTERED_MODEL_NAME = 'pet-classification-model'
+
 # Model filename
 MODEL_FILENAME = 'baseline_model.h5'

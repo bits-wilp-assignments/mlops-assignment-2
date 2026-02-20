@@ -7,13 +7,17 @@ from PIL import Image
 client = TestClient(app)
 
 def test_health():
-    """Test health endpoint returns correct status and model version"""
+    """Test health endpoint returns correct status and model source"""
     response = client.get("/health")
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "ok"
-    assert "model_version" in data
-    assert data["model_version"] == "baseline_model"
+    assert "model_source" in data
+    assert data["model_source"] in ["mlflow_registry", "local"]
+    # If loaded from registry, model_name and model_alias should be present
+    if data["model_source"] == "mlflow_registry":
+        assert "model_name" in data
+        assert "model_alias" in data
 
 def test_predict_endpoint():
     """Test predict endpoint with an image file"""

@@ -1,28 +1,47 @@
 import os
+import time
 import uvicorn
 from fastapi import FastAPI, UploadFile, File
+from prometheus_client import make_asgi_app
 from serving.src.inference.predictor import Predictor
-from serving.src.config.settings import MODEL_PATH, TEMP_DIR, HOST_NAME, PORT
+from serving.src.config.settings import TEMP_DIR, HOST_NAME, PORT
+from serving.monitoring.metrics import RequestMetrics
 from common.logger import get_logger
 
 logger = get_logger(__name__)
 app = FastAPI()
-predictor = Predictor()
+
+# Mount Prometheus metrics endpoint
+metrics_app = make_asgi_app()
+app.mount("/metrics", metrics_app)
+
+# Load model from MLflow registry with 'champion' alias
+predictor = Predictor(use_registry=True, model_alias="champion")
+metrics = RequestMetrics()
 
 @app.get("/health")
 def health():
-    return {
+    start_time = time.time()
+    health_response = {
         "status": "ok",
-        "model_version": MODEL_PATH.split('/')[-1].replace('.h5', '')
+        "model_source": predictor.model_source,
     }
+    # Include model name and alias if loaded from registry
+    if predictor.model_source == "mlflow_registry":
+        health_response["model_name"] = predictor.model_name
+        health_response["model_alias"] = predictor.model_alias
+    metrics.log_request(time.time() - start_time)
+    return health_response
 
 @app.put("/predict")
 async def predict_put(file: UploadFile = File(...)):
+    start_time = time.time()
     os.makedirs(TEMP_DIR, exist_ok=True)
     file_path = os.path.join(TEMP_DIR, file.filename)
     with open(file_path,"wb") as f:
         f.write(await file.read())
     result = predictor.predict(file_path)
+    metrics.log_request(time.time() - start_time)
     return result
 
 
