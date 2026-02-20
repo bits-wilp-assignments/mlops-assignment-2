@@ -104,19 +104,16 @@ def log_training_run(history, model, epochs, use_mixed_precision=False, run_name
         mlflow.log_metric("final_train_loss", history.history['loss'][-1])
         mlflow.log_metric("final_val_loss", history.history['val_loss'][-1])
 
-        # Log model artifact
+        # Log model using MLflow's Keras model logging (required for model registry)
+        mlflow.keras.log_model(
+            model,
+            artifact_path="model"
+        )
+        logger.info("Logged model for registry support")
+
+        # Also log model artifact (.h5 file) for direct access
         mlflow.log_artifact(MODEL_PATH)
-        
-        # Log model using MLflow's Keras model logging for model registry support
-        try:
-            mlflow.keras.log_model(
-                model,
-                artifact_path="model",
-                keras_model_kwargs={"save_format": "h5"}
-            )
-            logger.info("Logged model using mlflow.keras.log_model for registry support")
-        except Exception as e:
-            logger.warning(f"Could not log model with mlflow.keras.log_model: {e}")
+        logger.info(f"Logged model artifact: {MODEL_PATH}")
 
         # Log model architecture as text
         try:

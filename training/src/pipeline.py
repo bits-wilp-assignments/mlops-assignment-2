@@ -29,7 +29,7 @@ def run_pipeline(epochs=None, use_mixed_precision=None, enable_validation_gate=T
 
     # Start parent pipeline run
     pipeline_run = start_pipeline_run()
-    
+
     logger.info("=" * 80)
     logger.info(f"PIPELINE RUN ID: {pipeline_run.info.run_id}")
     logger.info("=" * 80)
@@ -58,13 +58,13 @@ def run_pipeline(epochs=None, use_mixed_precision=None, enable_validation_gate=T
             log_mlflow=True,
             use_mixed_precision=mp_enabled
         )
-        
+
         # Get the training run ID from the active MLflow run
         # The training run ID is from the nested run created by train_model
         # We need to retrieve it from MLflow
         client = mlflow.tracking.MlflowClient()
         parent_run = client.get_run(pipeline_run.info.run_id)
-        
+
         # Get child runs (nested runs)
         query = f"tags.mlflow.parentRunId = '{pipeline_run.info.run_id}'"
         child_runs = client.search_runs(
@@ -72,7 +72,7 @@ def run_pipeline(epochs=None, use_mixed_precision=None, enable_validation_gate=T
             filter_string=query,
             order_by=["start_time DESC"]
         )
-        
+
         # The most recent child run should be the training run
         if child_runs:
             training_run_id = child_runs[0].info.run_id
@@ -84,27 +84,27 @@ def run_pipeline(epochs=None, use_mixed_precision=None, enable_validation_gate=T
         logger.info("=" * 80)
 
         y_true, y_pred, y_pred_proba = evaluate_model(log_mlflow=True)
-        
+
         # Get the evaluation run ID
         child_runs = client.search_runs(
             experiment_ids=[parent_run.info.experiment_id],
             filter_string=query,
             order_by=["start_time DESC"]
         )
-        
+
         if len(child_runs) > 1:
             evaluation_run_id = child_runs[0].info.run_id
             logger.info(f"Evaluation Run ID: {evaluation_run_id}")
 
         # Stage 3: Validation Gate (if enabled)
-        if enable_validation_gate and evaluation_run_id:
+        if enable_validation_gate and training_run_id:
             logger.info("\n" + "=" * 80)
             logger.info("STAGE 3: Validation Gate")
             logger.info("=" * 80)
-            
+
             # Run validation gate - compares and promotes if better
-            promoted = validation_gate(challenger_run_id=evaluation_run_id)
-            
+            promoted = validation_gate(pipeline_run_id=pipeline_run.info.run_id)
+
             # Log validation result to pipeline run
             mlflow.log_param("model_promoted", promoted)
 
