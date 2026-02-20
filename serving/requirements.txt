@@ -1,0 +1,19 @@
+# Serving Module Dependencies
+# Install: pip install -r serving/requirements.txt
+
+# API Framework
+fastapi==0.129.0
+uvicorn==0.41.0
+python-multipart==0.0.22  # For file uploads
+
+# Model Loading & Inference
+tensorflow==2.18.0
+mlflow==3.9.0
+numpy==2.0.2
+pillow==12.1.1
+
+# Monitoring
+prometheus-client==0.24.1
+
+# Testing
+pytest==9.0.2

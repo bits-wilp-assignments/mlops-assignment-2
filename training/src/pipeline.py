@@ -4,14 +4,54 @@ Runs training, evaluation, and validation gate as nested runs under a single pip
 """
 import argparse
 import mlflow
+import subprocess
+from pathlib import Path
 from training.src.model.train import train_model
 from training.src.model.evaluate import evaluate_model
 from training.src.model.validate import validation_gate
 from training.src.tracking.mlflow_logger import start_pipeline_run
-from training.src.config.settings import EPOCHS, USE_MIXED_PRECISION
+from training.src.config.settings import EPOCHS, USE_MIXED_PRECISION, PROCESSED_DIR
 from common.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+def ensure_data_available():
+    """
+    Ensure DVC-tracked data is available before running the pipeline.
+    Checks if processed data exists, and runs 'dvc pull' if necessary.
+    """
+    processed_path = Path(PROCESSED_DIR)
+    
+    # Check if processed data directory exists and has content
+    if not processed_path.exists():
+        logger.warning(f"Processed data directory not found: {PROCESSED_DIR}")
+        logger.info("Attempting to pull data from DVC...")
+        try:
+            subprocess.run(["dvc", "pull"], check=True, cwd=Path(__file__).resolve().parents[3])
+            logger.info("✓ Data pulled successfully from DVC")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to pull data from DVC: {e}")
+            raise RuntimeError("Data not available and DVC pull failed. Please run 'dvc pull' manually.")
+        except FileNotFoundError:
+            logger.error("DVC command not found. Please install DVC: pip install dvc")
+            raise RuntimeError("DVC not installed. Please run: pip install dvc")
+    else:
+        # Check if directory has train/val/test subdirectories
+        expected_dirs = ["train", "val", "test"]
+        has_data = all((processed_path / d).exists() for d in expected_dirs)
+        
+        if not has_data:
+            logger.warning("Processed data structure incomplete")
+            logger.info("Attempting to pull data from DVC...")
+            try:
+                subprocess.run(["dvc", "pull"], check=True, cwd=Path(__file__).resolve().parents[3])
+                logger.info("✓ Data pulled successfully from DVC")
+            except Exception as e:
+                logger.error(f"Failed to pull data: {e}")
+                raise RuntimeError("Data structure incomplete and DVC pull failed.")
+        else:
+            logger.info("✓ DVC-tracked data is available")
 
 
 def run_pipeline(epochs=None, use_mixed_precision=None, enable_validation_gate=True):
@@ -26,6 +66,9 @@ def run_pipeline(epochs=None, use_mixed_precision=None, enable_validation_gate=T
     logger.info("=" * 80)
     logger.info("Starting Complete ML Pipeline")
     logger.info("=" * 80)
+    
+    # Ensure DVC data is available
+    ensure_data_available()
 
     # Start parent pipeline run
     pipeline_run = start_pipeline_run()

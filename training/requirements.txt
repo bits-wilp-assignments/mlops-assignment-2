@@ -1,0 +1,26 @@
+# Training Module Dependencies
+# Install: pip install -r training/requirements.txt
+
+# Deep Learning Framework
+tensorflow==2.18.0
+tensorflow-metal==1.2.0  # For Mac GPU acceleration (remove if not on macOS)
+
+# Experiment Tracking
+mlflow==3.9.0
+
+# Data Version Control
+dvc==3.66.1
+dvc-gdrive==3.0.1  # For Google Drive remote storage (if using)
+
+# Data Processing & ML
+numpy==2.0.2
+pillow==12.1.1
+scikit-learn==1.8.0
+scipy==1.17.0
+
+# Visualization
+matplotlib==3.10.8
+seaborn==0.13.2
+
+# Testing
+pytest==9.0.2
