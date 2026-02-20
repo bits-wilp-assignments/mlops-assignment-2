@@ -25,7 +25,11 @@ USE_MIXED_PRECISION = False  # Enable for faster training on GPUs (Metal/CUDA)
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILENAME)
 
 # MLflow run names
-
 MLFLOW_RUN_NAME_PIPELINE = 'pipeline'
 MLFLOW_RUN_NAME_TRAINING = 'training'
 MLFLOW_RUN_NAME_EVALUATION = 'evaluation'
+
+# Model Registry Configuration
+REGISTERED_MODEL_NAME = 'pet-classification-model'  # Name for the registered model in MLflow
+VALIDATION_METRIC_NAME = 'test_accuracy'  # Metric to use for validation gate comparison
+

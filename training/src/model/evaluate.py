@@ -15,6 +15,15 @@ from common.logger import get_logger
 logger = get_logger(__name__)
 
 def evaluate_model(model_path=MODEL_PATH, log_mlflow=True):
+    """Evaluate the trained model on test data and log metrics to MLflow.
+    Args:
+        model_path: Path to the trained model file
+        log_mlflow: Whether to log metrics to MLflow (default: True)
+    Returns:
+        y_true: True labels
+        y_pred_binary: Predicted binary labels
+        y_pred_proba: Predicted probabilities
+    """
     logger.info("Starting model evaluation...")
     _, _, test_gen = get_generators()
     model = load_model(model_path)

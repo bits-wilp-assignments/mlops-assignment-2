@@ -14,14 +14,14 @@ logger = get_logger(__name__)
 def plot_confusion_matrix(confusion_mat, filename="confusion_matrix.png"):
     """Create and save confusion matrix plot with smaller file size."""
     fig, ax = plt.subplots(figsize=(6, 5))
-    sns.heatmap(confusion_mat, annot=True, fmt='d', cmap='Blues', 
+    sns.heatmap(confusion_mat, annot=True, fmt='d', cmap='Blues',
                 cbar=True, square=True, ax=ax)
     ax.set_xlabel('Predicted Label')
     ax.set_ylabel('True Label')
     ax.set_title('Confusion Matrix')
     ax.set_xticklabels(['Cat', 'Dog'])
     ax.set_yticklabels(['Cat', 'Dog'])
-    
+
     # Save with lower DPI for smaller file size
     plt.tight_layout()
     plt.savefig(filename, dpi=80, bbox_inches='tight', format='png')
@@ -40,7 +40,7 @@ def plot_roc_curve(fpr, tpr, auc_score, filename="roc_curve.png"):
     ax.set_title('Receiver Operating Characteristic (ROC) Curve')
     ax.legend(loc="lower right")
     ax.grid(True, alpha=0.3)
-    
+
     # Save with lower DPI for smaller file size
     plt.tight_layout()
     plt.savefig(filename, dpi=80, bbox_inches='tight', format='png')
@@ -106,6 +106,17 @@ def log_training_run(history, model, epochs, use_mixed_precision=False, run_name
 
         # Log model artifact
         mlflow.log_artifact(MODEL_PATH)
+        
+        # Log model using MLflow's Keras model logging for model registry support
+        try:
+            mlflow.keras.log_model(
+                model,
+                artifact_path="model",
+                keras_model_kwargs={"save_format": "h5"}
+            )
+            logger.info("Logged model using mlflow.keras.log_model for registry support")
+        except Exception as e:
+            logger.warning(f"Could not log model with mlflow.keras.log_model: {e}")
 
         # Log model architecture as text
         try:

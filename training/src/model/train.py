@@ -15,7 +15,10 @@ import sys
 logger = get_logger(__name__)
 
 def setup_device(use_mixed_precision=False):
-    """Configure TensorFlow to use Metal (Mac) or CUDA (NVIDIA GPU) if available."""
+    """Configure TensorFlow to use Metal (Mac) or CUDA (NVIDIA GPU) if available.
+    Args:
+        use_mixed_precision: Whether to enable mixed precision training for faster GPU performance
+    """
     logger.info("Setting up device for training...")
 
     # Enable mixed precision if requested and GPU is available
@@ -56,6 +59,12 @@ def setup_device(use_mixed_precision=False):
     return gpus
 
 def build_cnn(input_shape=INPUT_SHAPE):
+    """Build a simple CNN model for binary image classification.
+    Args:
+        input_shape: Shape of the input images
+    Returns:
+        model: Compiled Keras model
+    """
     model = models.Sequential([
         Input(shape=input_shape),
         layers.Conv2D(32, (3,3), activation='relu'),
@@ -79,6 +88,15 @@ def build_cnn(input_shape=INPUT_SHAPE):
     return model
 
 def train_model(epochs=None, log_mlflow=True, use_mixed_precision=None):
+    """Train the CNN model and optionally log training details to MLflow.
+    Args:
+        epochs: Number of training epochs (default: EPOCHS)
+        log_mlflow: Whether to log training details to MLflow (default: True)
+        use_mixed_precision: Whether to enable mixed precision training for faster GPU performance
+    Returns:
+        model: Trained Keras model
+        history: Training history object
+    """
     logger.info("Starting model training...")
 
     # Setup device (Metal for Mac, CUDA for NVIDIA)
