@@ -4,7 +4,7 @@ metadata:
   name: pet-adoptation-api-pdb
   namespace: pet-adoptation
 spec:
-  minAvailable: 2
+  minAvailable: 0
   selector:
     matchLabels:
       app: pet-adoptation-api
