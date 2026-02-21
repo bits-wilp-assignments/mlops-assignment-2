@@ -3,7 +3,7 @@ from serving.src.inference.predictor import Predictor
 
 @pytest.fixture
 def predictor():
-    """Fixture to create a predictor instance"""
+    """Fixture to create a predictor instance (requires MLflow with registered model)"""
     return Predictor()
 
 def test_predictor_cat_image(predictor):

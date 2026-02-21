@@ -5,15 +5,22 @@
 fastapi==0.129.0
 uvicorn==0.41.0
 python-multipart==0.0.22  # For file uploads
+httpx==0.28.1  # For TestClient support
 
 # Model Loading & Inference
+# Using CPU-only TensorFlow for serving (sufficient for inference workloads)
+# For GPU-accelerated serving, use platform-specific versions from training/requirements.txt
 tensorflow==2.18.0
+
 mlflow==3.9.0
 numpy==2.0.2
 pillow==12.1.1
 
 # Monitoring
 prometheus-client==0.24.1
+
+# HTTP Client
+requests==2.32.5  # For smoke tests and API calls
 
 # Testing
 pytest==9.0.2

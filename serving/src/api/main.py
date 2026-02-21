@@ -16,7 +16,7 @@ metrics_app = make_asgi_app()
 app.mount("/metrics", metrics_app)
 
 # Load model from MLflow registry with 'champion' alias
-predictor = Predictor(use_registry=True, model_alias="champion")
+predictor = Predictor(model_alias="champion")
 metrics = RequestMetrics()
 
 @app.get("/health")
@@ -24,12 +24,9 @@ def health():
     start_time = time.time()
     health_response = {
         "status": "ok",
-        "model_source": predictor.model_source,
+        "model_name": predictor.model_name,
+        "model_alias": predictor.model_alias,
     }
-    # Include model name and alias if loaded from registry
-    if predictor.model_source == "mlflow_registry":
-        health_response["model_name"] = predictor.model_name
-        health_response["model_alias"] = predictor.model_alias
     metrics.log_request(time.time() - start_time)
     return health_response
 

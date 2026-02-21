@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pet-classification-api-pdb
+  namespace: pet-adoptation
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: pet-classification-api

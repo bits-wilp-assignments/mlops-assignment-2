@@ -1,0 +1,204 @@
+// CD Pipeline - Regular Pipeline (NOT Multibranch)
+// Triggered automatically by CI pipeline after successful build
+// Can also be triggered manually for rollback/specific deployments
+// Configure as: Pipeline (not Multibranch) with SCM from main branch only
+
+pipeline {
+    agent any
+
+    parameters {
+        string(
+            name: 'IMAGE_TAG',
+            description: 'Docker image tag to deploy (provided by CI or enter manually)',
+            defaultValue: ''
+        )
+        booleanParam(
+            name: 'SKIP_APPROVAL',
+            description: 'Skip manual approval (use with caution)',
+            defaultValue: false
+        )
+    }
+
+    environment {
+        DOCKERHUB_USERNAME = 'bitshub4krishanu'
+        IMAGE_NAME = 'pet-classification-api'
+        KUBECONFIG_PROD = credentials('kubeconfig-prod')
+        NAMESPACE = 'pet-adoptation'
+    }
+
+    stages {
+        stage('Validate Parameters') {
+            steps {
+                script {
+                    if (!params.IMAGE_TAG || params.IMAGE_TAG.trim() == '') {
+                        error("IMAGE_TAG parameter is required.")
+                    }
+
+                    if (params.IMAGE_TAG == 'latest') {
+                        error("Cannot deploy 'latest' tag to production. Use a specific version tag.")
+                    }
+
+                    echo """
+                    ========================================
+                    DEPLOYMENT CONFIGURATION
+                    ========================================
+                    Image: ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:${params.IMAGE_TAG}
+                    Namespace: ${NAMESPACE}
+                    Skip Approval: ${params.SKIP_APPROVAL}
+                    ========================================
+                    """
+                }
+            }
+        }
+
+        stage('Manual Approval') {
+            when {
+                expression { !params.SKIP_APPROVAL }
+            }
+            steps {
+                script {
+                    timeout(time: 30, unit: 'MINUTES') {
+                        input(
+                            message: "Deploy ${params.IMAGE_TAG} to production?",
+                            ok: 'Deploy to Production',
+                            submitter: 'admin,deployment-team'
+                        )
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Production') {
+            steps {
+                script {
+                    echo "Deploying to production environment..."
+                    sh '''
+                        export KUBECONFIG=${KUBECONFIG_PROD}
+
+                        # Apply all Kubernetes manifests
+                        kubectl apply -f k8s/namespace.yaml
+                        kubectl apply -f k8s/deployment.yaml
+                        kubectl apply -f k8s/service.yaml
+                        kubectl apply -f k8s/hpa.yaml
+                        kubectl apply -f k8s/pdb.yaml
+
+                        # Update deployment image
+                        kubectl set image deployment/pet-classification-api \
+                            pet-classification-api=${DOCKERHUB_USERNAME}/${IMAGE_NAME}:${params.IMAGE_TAG} \
+                            -n ${NAMESPACE}
+
+                        # Wait for rollout to complete
+                        kubectl rollout status deployment/pet-classification-api -n ${NAMESPACE} --timeout=10m
+
+                        # Verify pods are running
+                        kubectl get pods -n ${NAMESPACE} -l app=pet-classification-api
+                    '''
+                    echo "Deployment completed"
+                }
+            }
+        }
+
+        stage('Health Check') {
+            steps {
+                script {
+                    echo "Running post-deployment health checks..."
+                    sh '''
+                        export KUBECONFIG=${KUBECONFIG_PROD}
+
+                        # Wait for service to stabilize
+                        sleep 10
+
+                        # Get service endpoint
+                        SERVICE_URL=$(kubectl get svc pet-classification-api -n ${NAMESPACE} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+                        if [ -z "$SERVICE_URL" ]; then
+                            SERVICE_URL=$(kubectl get svc pet-classification-api -n ${NAMESPACE} -o jsonpath='{.spec.clusterIP}')
+                        fi
+
+                        echo "Testing health endpoint at: http://${SERVICE_URL}/health"
+
+                        # Retry health check
+                        for i in {1..5}; do
+                            if curl -f -s http://${SERVICE_URL}/health; then
+                                echo "Health check passed"
+                                exit 0
+                            fi
+                            echo "Attempt $i failed, retrying..."
+                            sleep 10
+                        done
+
+                        echo "ERROR: Health check failed after 5 attempts"
+                        exit 1
+                    '''
+                }
+            }
+        }
+
+        stage('Deployment Summary') {
+            steps {
+                script {
+                    echo """
+                    ========================================
+                    DEPLOYMENT SUCCESSFUL
+                    ========================================
+                    Image: ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:${params.IMAGE_TAG}
+                    Namespace: ${NAMESPACE}
+                    Build: ${BUILD_NUMBER}
+                    ========================================
+                    Monitor at: Grafana/Prometheus
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Deployment completed successfully!"
+            emailext (
+                subject: "Production Deployment Success - ${params.IMAGE_TAG}",
+                body: """
+                    Production deployment completed successfully!
+
+                    Image: ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:${params.IMAGE_TAG}
+                    Namespace: ${NAMESPACE}
+                    Build: ${BUILD_NUMBER}
+
+                    All health checks passed.
+                """,
+                to: "${env.EMAIL_RECIPIENTS}"
+            )
+        }
+        failure {
+            echo "Deployment failed!"
+
+            script {
+                // Rollback on failure
+                sh '''
+                    export KUBECONFIG=${KUBECONFIG_PROD}
+                    echo "Initiating rollback..."
+                    kubectl rollout undo deployment/pet-classification-api -n ${NAMESPACE}
+                    kubectl rollout status deployment/pet-classification-api -n ${NAMESPACE} --timeout=5m
+                    echo "Rollback completed"
+                '''
+            }
+
+            emailext (
+                subject: "Production Deployment Failed - ${params.IMAGE_TAG}",
+                body: """
+                    Production deployment failed!
+
+                    Image: ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:${params.IMAGE_TAG}
+                    Build: ${BUILD_NUMBER}
+
+                    Automatic rollback has been completed.
+                    Check Jenkins logs for details.
+                """,
+                to: "${env.EMAIL_RECIPIENTS}"
+            )
+        }
+        always {
+            cleanWs(deleteDirs: true)
+        }
+    }
+}

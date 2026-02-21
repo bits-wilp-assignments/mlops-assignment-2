@@ -1,13 +1,4 @@
 stages:
-  test:
-    cmd: pytest training/test/ -v --tb=short && touch .test_passed
-    deps:
-      - training/test/
-      - training/src/
-    outs:
-      - .test_passed:
-          cache: false
-
   preprocess:
     cmd: python -m training.src.data.preprocess
     deps:
@@ -21,12 +12,10 @@ stages:
   train:
     cmd: python -m training.src.model.train
     deps:
-      - .test_passed
       - training/src/model/train.py
       - training/src/model/evaluate.py
       - training/src/data/preprocess.py
       - data/processed
-      - training/test/
     params:
       - training/src/config/settings.py:
           - EPOCHS

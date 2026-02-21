@@ -1,0 +1,169 @@
+pipeline {
+    agent any
+
+    triggers {
+        // Run weekly on Sunday at 2 AM
+        cron('H 2 * * 0')
+    }
+
+    environment {
+        PYTHON_VERSION = '3.12.0'
+        VENV_PATH = "${WORKSPACE}/venv"
+        DVC_CACHE_DIR = '/var/lib/jenkins/dvc-cache'
+        // MLflow server for experiment tracking and model registration
+        // Update with your actual MLflow server URL
+        MLFLOW_TRACKING_URI = 'http://mlflow-server:5000'
+    }
+
+    stages {
+        stage('Setup') {
+            steps {
+                script {
+                    echo "Setting up Python virtual environment..."
+                    sh '''
+                        python3 -m venv ${VENV_PATH}
+                        . ${VENV_PATH}/bin/activate
+                        pip install --upgrade pip
+                        pip install -r requirements.txt
+                    '''
+                }
+            }
+        }
+
+        stage('Pull DVC Data') {
+            steps {
+                script {
+                    echo "Pulling data tracked by DVC..."
+                    sh '''
+                        . ${VENV_PATH}/bin/activate
+                        dvc pull
+                    '''
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                script {
+                    echo "Running unit tests..."
+                    sh '''
+                        . ${VENV_PATH}/bin/activate
+                        pytest training/test/ -v --tb=short --junitxml=test-results/junit.xml
+                    '''
+                }
+            }
+            post {
+                always {
+                    junit 'test-results/junit.xml'
+                }
+            }
+        }
+
+        stage('DVC Reproduce') {
+            steps {
+                script {
+                    echo "Running DVC pipeline (preprocess, train, validate)..."
+                    sh '''
+                        . ${VENV_PATH}/bin/activate
+                        dvc repro
+                    '''
+                }
+            }
+        }
+
+        stage('Push DVC Artifacts') {
+            steps {
+                script {
+                    echo "Pushing model and metrics to DVC remote..."
+                    sh '''
+                        . ${VENV_PATH}/bin/activate
+                        dvc push
+                    '''
+                }
+            }
+        }
+
+        stage('Model Validation Results') {
+            steps {
+                script {
+                    echo "Checking validation gate results..."
+                    sh '''
+                        . ${VENV_PATH}/bin/activate
+                        if [ -f .mlflow_run_id ]; then
+                            echo "MLflow Run ID: $(cat .mlflow_run_id)"
+                            echo "Check MLflow UI for validation results"
+                        else
+                            echo "No MLflow run ID found"
+                            exit 1
+                        fi
+                    '''
+                }
+            }
+        }
+
+        stage('Archive Model Artifacts') {
+            steps {
+                script {
+                    echo "Archiving model artifacts..."
+                    archiveArtifacts(
+                        artifacts: 'models/*.h5, .mlflow_run_id, dvc.lock',
+                        allowEmptyArchive: false,
+                        fingerprint: true,
+                        onlyIfSuccessful: true
+                    )
+                }
+            }
+        }
+
+        stage('Git Commit Results') {
+            when {
+                expression {
+                    return sh(
+                        script: 'git diff --quiet dvc.lock .mlflow_run_id',
+                        returnStatus: true
+                    ) != 0
+                }
+            }
+            steps {
+                script {
+                    echo "Committing DVC tracking files..."
+                    sh '''
+                        git config user.name "Jenkins CI"
+                        git config user.email "jenkins@ci.local"
+                        git add dvc.lock .mlflow_run_id .dvc/config
+                        git commit -m "CI: Update model training run ${BUILD_NUMBER}"
+                        git push origin ${GIT_BRANCH}
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Training pipeline completed successfully!"
+            emailext (
+                subject: "Training Pipeline Success - Build ${BUILD_NUMBER}",
+                body: "The continuous training pipeline completed successfully. Check MLflow for results.",
+                to: "${env.EMAIL_RECIPIENTS}"
+            )
+        }
+        failure {
+            echo "Training pipeline failed!"
+            emailext (
+                subject: "Training Pipeline Failed - Build ${BUILD_NUMBER}",
+                body: "The continuous training pipeline failed. Check Jenkins logs for details.",
+                to: "${env.EMAIL_RECIPIENTS}"
+            )
+        }
+        always {
+            cleanWs(
+                deleteDirs: true,
+                patterns: [
+                    [pattern: 'venv/**', type: 'INCLUDE'],
+                    [pattern: 'test-results/**', type: 'INCLUDE']
+                ]
+            )
+        }
+    }
+}

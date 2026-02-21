@@ -1,23 +1,18 @@
-import pytest
-import io
 from fastapi.testclient import TestClient
 from serving.src.api.main import app
-from PIL import Image
 
 client = TestClient(app)
 
 def test_health():
-    """Test health endpoint returns correct status and model source"""
+    """Test health endpoint returns correct status and model info from MLflow registry"""
     response = client.get("/health")
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "ok"
-    assert "model_source" in data
-    assert data["model_source"] in ["mlflow_registry", "local"]
-    # If loaded from registry, model_name and model_alias should be present
-    if data["model_source"] == "mlflow_registry":
-        assert "model_name" in data
-        assert "model_alias" in data
+    assert "model_name" in data
+    assert "model_alias" in data
+    assert data["model_name"] == "pet-adoption-classifier"
+    assert data["model_alias"] == "champion"
 
 def test_predict_endpoint():
     """Test predict endpoint with an image file"""

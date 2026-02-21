@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+test-results/
+*.log
+
+# DVC
+.dvc/cache/
+.dvc/tmp/
+
+# Data
+data/raw/
+data/processed/
+data/temp/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# CI/CD
+.github/
+Jenkinsfile.*
+k8s/
+
+# MLflow
+mlflow.db
+mlruns/
+
+# Misc
+.env
+.python-version
+*.db

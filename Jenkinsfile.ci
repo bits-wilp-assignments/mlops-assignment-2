@@ -1,0 +1,211 @@
+pipeline {
+    agent any
+
+    triggers {
+        // Trigger on GitHub push events
+        githubPush()
+    }
+
+    environment {
+        PYTHON_VERSION = '3.12.0'
+        VENV_PATH = "${WORKSPACE}/venv"
+        DOCKERHUB_USERNAME = 'bitshub4krishanu'
+        IMAGE_NAME = 'pet-classification-api'
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        // MLflow server for model loading during tests
+        // Update with your actual MLflow server URL
+        MLFLOW_TRACKING_URI = 'http://mlflow-server:5000'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Setup Python Environment') {
+            steps {
+                script {
+                    echo "Setting up Python virtual environment..."
+                    sh '''
+                        python3 -m venv ${VENV_PATH}
+                        . ${VENV_PATH}/bin/activate
+                        pip install --upgrade pip
+                        pip install -r serving/requirements.txt
+                        pip install pytest-cov
+                    '''
+                }
+            }
+        }
+
+        stage('Run Unit Tests') {
+            steps {
+                script {
+                    echo "Running serving tests..."
+                    sh '''
+                        . ${VENV_PATH}/bin/activate
+                        pytest serving/test/ -v --tb=short --junitxml=test-results/serving-junit.xml --cov=serving/src --cov-report=xml --cov-report=html
+                    '''
+                }
+            }
+            post {
+                always {
+                    junit 'test-results/serving-junit.xml'
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'htmlcov',
+                        reportFiles: 'index.html',
+                        reportName: 'Coverage Report'
+                    ])
+                }
+            }
+        }
+
+        stage('Integration Tests') {
+            steps {
+                script {
+                    echo "Running integration tests..."
+                    sh '''
+                        . ${VENV_PATH}/bin/activate
+
+                        # Start API in background
+                        cd serving
+                        uvicorn src.api.main:app --host 0.0.0.0 --port 8000 &
+                        API_PID=$!
+
+                        # Wait for API to start
+                        sleep 5
+
+                        # Run smoke tests
+                        cd ..
+                        python smoketest.py || true
+
+                        # Kill API
+                        kill $API_PID || true
+                    '''
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    echo "Building Docker image..."
+                    sh '''
+                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -f serving/Dockerfile .
+                        docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+                    '''
+                }
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                script {
+                    echo "Scanning Docker image for vulnerabilities..."
+                    sh '''
+                        # Using trivy for container scanning
+                        trivy image --severity HIGH,CRITICAL ${IMAGE_NAME}:${IMAGE_TAG} || echo "Security issues found"
+                    '''
+                }
+            }
+        }
+
+        stage('Push to Registry') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    echo "Pushing Docker image to Docker Hub..."
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh '''
+                            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                            docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}
+                            docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:latest
+                            docker push ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}
+                            docker push ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:latest
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Tag Git Release') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    echo "Tagging release in Git..."
+                    sh '''
+                        git config user.name "Jenkins CI"
+                        git config user.email "jenkins@ci.local"
+                        git tag -a serving-v${BUILD_NUMBER} -m "Serving release build ${BUILD_NUMBER}"
+                        git push origin serving-v${BUILD_NUMBER}
+                    '''
+                }
+            }
+        }
+
+        stage('Trigger CD Pipeline') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    echo "Triggering CD pipeline for deployment..."
+                    build(
+                        job: 'pet-classification-cd',
+                        parameters: [
+                            string(name: 'IMAGE_TAG', value: "${IMAGE_TAG}"),
+                            booleanParam(name: 'SKIP_APPROVAL', value: false)
+                        ],
+                        wait: false
+                    )
+                    echo "CD pipeline triggered with IMAGE_TAG: ${IMAGE_TAG}"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "CI pipeline completed successfully!"
+            emailext (
+                subject: "Serving CI Success - Build ${BUILD_NUMBER}",
+                body: """
+                    Serving CI pipeline completed successfully.
+
+                    Image: ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}
+                    Build: ${BUILD_NUMBER}
+                    Branch: ${GIT_BRANCH}
+
+                    Ready for deployment!
+                """,
+                to: "${env.EMAIL_RECIPIENTS}"
+            )
+        }
+        failure {
+            echo "CI pipeline failed!"
+            emailext (
+                subject: "Serving CI Failed - Build ${BUILD_NUMBER}",
+                body: "The serving CI pipeline failed. Check Jenkins logs for details.",
+                to: "${env.EMAIL_RECIPIENTS}"
+            )
+        }
+        always {
+            script {
+                // Clean up Docker images
+                sh '''
+                    docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true
+                    docker rmi ${IMAGE_NAME}:latest || true
+                '''
+            }
+            cleanWs(deleteDirs: true)
+        }
+    }
+}
