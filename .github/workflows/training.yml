@@ -19,6 +19,7 @@ jobs:
   test-and-train:
     name: Test and Train Model
     runs-on: self-hosted
+    timeout-minutes: 120  # 2 hour timeout for the entire job
 
     steps:
       - uses: actions/checkout@v4
@@ -71,18 +72,24 @@ jobs:
       - name: Pull and preprocess data
         run: |
           source venv/bin/activate
-          dvc pull data/raw.dvc || true
-          dvc repro preprocess
+          # Skip DVC pull if no service account is configured
+          if [ -f .dvc/tmp/gdrive-sa.json ] || [ -f .dvc/config.local ]; then
+            echo "DVC credentials found, pulling data..."
+            dvc pull data/raw.dvc -v || echo "WARNING: DVC pull failed, using existing data"
+          else
+            echo "No DVC credentials configured, skipping pull (using existing data)"
+          fi
+          dvc repro preprocess -v
 
       - name: Train model
         run: |
           source venv/bin/activate
-          dvc repro train
+          dvc repro train -v
 
       - name: Validate model
         run: |
           source venv/bin/activate
-          dvc repro validate
+          dvc repro validate -v
 
       - name: Upload model
         uses: actions/upload-artifact@v4
