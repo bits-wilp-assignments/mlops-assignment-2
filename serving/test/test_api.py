@@ -11,7 +11,7 @@ def test_health():
     assert data["status"] == "ok"
     assert "model_name" in data
     assert "model_alias" in data
-    assert data["model_name"] == "pet-adoption-classifier"
+    assert data["model_name"] == "pet-classification-model"
     assert data["model_alias"] == "champion"
 
 def test_predict_endpoint():

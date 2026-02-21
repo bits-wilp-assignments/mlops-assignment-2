@@ -16,9 +16,33 @@ env:
   MLFLOW_TRACKING_URI: http://localhost:5000
 
 jobs:
+  test:
+    name: Test
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r training/requirements.txt
+          pip install pytest
+
+      - name: Run training tests
+        run: pytest training/test/ -v
+
   train:
     name: Train Model
     runs-on: self-hosted
+    needs: test
 
     steps:
       - uses: actions/checkout@v4
