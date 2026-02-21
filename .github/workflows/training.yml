@@ -19,56 +19,69 @@ jobs:
   test:
     name: Test
     runs-on: self-hosted
-
+    env:
+      PYENV_ROOT: ${{ github.workspace }}/.pyenv_temp
+    
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
+      - name: Set up Python environment
+        run: |
+          eval "$(pyenv init -)"
+          pyenv global 3.12.0 || pyenv global 3.12
+          python --version
 
       - name: Install dependencies
         run: |
+          eval "$(pyenv init -)"
           pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r training/requirements.txt
           pip install pytest
 
       - name: Run training tests
-        run: pytest training/test/ -v
+        run: |
+          eval "$(pyenv init -)"
+          pytest training/test/ -v
 
   train:
     name: Train Model
     runs-on: self-hosted
     needs: test
+    env:
+      PYENV_ROOT: ${{ github.workspace }}/.pyenv_temp
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
+      - name: Set up Python environment
+        run: |
+          eval "$(pyenv init -)"
+          pyenv global 3.12.0 || pyenv global 3.12
+          python --version
 
       - name: Install dependencies
         run: |
+          eval "$(pyenv init -)"
           pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r training/requirements.txt
 
       - name: Pull and preprocess data
         run: |
+          eval "$(pyenv init -)"
           dvc pull data/raw.dvc || true
           dvc repro preprocess
 
       - name: Train model
-        run: dvc repro train
+        run: |
+          eval "$(pyenv init -)"
+          dvc repro train
 
       - name: Validate model
-        run: dvc repro validate
+        run: |
+          eval "$(pyenv init -)"
+          dvc repro validate
 
       - name: Upload model
         uses: actions/upload-artifact@v4
