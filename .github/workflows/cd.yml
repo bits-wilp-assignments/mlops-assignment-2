@@ -1,18 +1,21 @@
 name: serving-CD
 
 on:
+  workflow_run:
+    workflows: ["serving-CI"]
+    types:
+      - completed
+    branches: [main]
   push:
     branches: [main]
     paths:
-      - 'serving/**'
-      - 'common/**'
       - 'deployment/**'
       - '.github/workflows/cd.yml'
   workflow_dispatch:
 
 env:
   IMAGE_NAME: bitshub4krishanu/pet-adoptation-api
-  MLFLOW_TRACKING_URI: https://joint-hookworm-suitable.ngrok-free.app
+  MLFLOW_TRACKING_URI: http://localhost:5050
   ENVIRONMENT: production
   LOG_LEVEL: INFO
 
@@ -20,12 +23,22 @@ jobs:
   build-and-deploy:
     name: Build and Deploy
     runs-on: self-hosted
+    # Only run if CI workflow succeeded or if manually triggered
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.workflow_run.conclusion == 'success') }}
     permissions:
       contents: read
       packages: write
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          clean: false
+
+      - name: Clean up stale files
+        run: |
+          # Remove Python cache
+          find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+          find . -type f -name "*.pyc" -delete 2>/dev/null || true
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
