@@ -26,15 +26,27 @@ jobs:
       - name: Verify Python version
         run: python --version
 
+      - name: Create and activate virtual environment
+        run: |
+          if [ ! -d "venv" ]; then
+            python -m venv venv
+          fi
+          source venv/bin/activate
+          echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
+          echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
+
       - name: Install dependencies
         run: |
+          source venv/bin/activate
           pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r training/requirements.txt
           pip install pytest
 
       - name: Run training tests
-        run: pytest training/test/ -v
+        run: |
+          source venv/bin/activate
+          pytest training/test/ -v
 
   train:
     name: Train Model
@@ -44,22 +56,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Activate virtual environment
+        run: |
+          source venv/bin/activate
+          echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
+          echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
+
       - name: Install dependencies
         run: |
+          source venv/bin/activate
           pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r training/requirements.txt
 
       - name: Pull and preprocess data
         run: |
+          source venv/bin/activate
           dvc pull data/raw.dvc || true
           dvc repro preprocess
 
       - name: Train model
-        run: dvc repro train
+        run: |
+          source venv/bin/activate
+          dvc repro train
 
       - name: Validate model
-        run: dvc repro validate
+        run: |
+          source venv/bin/activate
+          dvc repro validate
 
       - name: Upload model
         uses: actions/upload-artifact@v4
