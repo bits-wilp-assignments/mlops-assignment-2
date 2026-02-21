@@ -23,6 +23,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Clean up DVC locks
+        run: |
+          rm -f .dvc/tmp/lock
+          rm -f .dvc/tmp/rwlock*
+
       - name: Verify Python version
         run: python --version
 
@@ -42,14 +47,6 @@ jobs:
           pip install -r requirements.txt
           pip install -r training/requirements.txt
           pip install pytest
-
-      - name: Configure DVC remote credentials
-        run: |
-          mkdir -p .dvc/tmp
-          echo '${{ secrets.GDRIVE_CREDENTIALS_DATA }}' > .dvc/tmp/gdrive-credentials.json
-          dvc remote modify myremote gdrive_service_account_json_file_path .dvc/tmp/gdrive-credentials.json
-        env:
-          GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
 
       - name: Run training tests
         run: |
@@ -77,8 +74,3 @@ jobs:
         with:
           name: model
           path: models/baseline_model.h5
-
-      - name: Cleanup credentials
-        if: always()
-        run: |
-          rm -f .dvc/tmp/gdrive-credentials.json
