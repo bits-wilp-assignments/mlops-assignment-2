@@ -1,13 +1,13 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: pet-classification-api-hpa
+  name: pet-adoptation-api-hpa
   namespace: pet-adoptation
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: pet-classification-api
+    name: pet-adoptation-api
   minReplicas: 3
   maxReplicas: 10
   metrics:

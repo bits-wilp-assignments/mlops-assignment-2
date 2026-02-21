@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pet-classification-api
+  name: pet-adoptation-api
   namespace: pet-adoptation
   labels:
-    app: pet-classification-api
+    app: pet-adoptation-api
     environment: production
 spec:
   replicas: 3
@@ -15,23 +15,21 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: pet-classification-api
+      app: pet-adoptation-api
   template:
     metadata:
       labels:
-        app: pet-classification-api
+        app: pet-adoptation-api
         version: v1
     spec:
       containers:
-      - name: pet-classification-api
-        image: bitshub4krishanu/pet-classification-api:latest
+      - name: pet-adoptation-api
+        image: bitshub4krishanu/pet-adoptation-api:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
           name: http
         env:
-        - name: MLFLOW_TRACKING_URI
-          value: "http://mlflow-server:5000"  # Update with your MLflow server URL
         - name: ENVIRONMENT
           value: "production"
         - name: LOG_LEVEL
@@ -73,5 +71,5 @@ spec:
                 - key: app
                   operator: In
                   values:
-                  - pet-classification-api
+                  - pet-adoptation-api
               topologyKey: kubernetes.io/hostname

@@ -1,0 +1,53 @@
+name: Training
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'training/**'
+      - 'dvc.yaml'
+      - 'data/raw.dvc'
+      - '.github/workflows/training.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * 0'  # Weekly on Sunday
+
+env:
+  MLFLOW_TRACKING_URI: http://localhost:5000
+
+jobs:
+  train:
+    name: Train Model
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r training/requirements.txt
+
+      - name: Pull and preprocess data
+        run: |
+          dvc pull data/raw.dvc || true
+          dvc repro preprocess
+
+      - name: Train model
+        run: dvc repro train
+
+      - name: Validate model
+        run: dvc repro validate
+
+      - name: Upload model
+        uses: actions/upload-artifact@v4
+        with:
+          name: model
+          path: models/baseline_model.h5
