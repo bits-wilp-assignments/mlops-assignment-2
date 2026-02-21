@@ -16,8 +16,8 @@ env:
   MLFLOW_TRACKING_URI: https://joint-hookworm-suitable.ngrok-free.app
 
 jobs:
-  test:
-    name: Test
+  test-and-train:
+    name: Test and Train Model
     runs-on: self-hosted
 
     steps:
@@ -51,42 +51,18 @@ jobs:
           pip install -r training/requirements.txt
           pip install pytest
 
+      - name: Configure DVC remote credentials
+        run: |
+          mkdir -p .dvc/tmp
+          echo '${{ secrets.GDRIVE_CREDENTIALS_DATA }}' > .dvc/tmp/gdrive-credentials.json
+          dvc remote modify myremote gdrive_service_account_json_file_path .dvc/tmp/gdrive-credentials.json
+        env:
+          GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
+
       - name: Run training tests
         run: |
           source venv/bin/activate
           pytest training/test/ -v
-
-  train:
-    name: Train Model
-    runs-on: self-hosted
-    needs: test
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Cache virtual environment
-        uses: actions/cache@v4
-        id: cache-venv
-        with:
-          path: venv
-          key: venv-${{ runner.os }}-${{ hashFiles('requirements.txt', 'training/requirements.txt') }}
-
-      - name: Activate virtual environment
-        run: |
-          if [ ! -d "venv" ]; then
-            python -m venv venv
-          fi
-          source venv/bin/activate
-          echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
-          echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
-
-      - name: Install dependencies
-        if: steps.cache-venv.outputs.cache-hit != 'true'
-        run: |
-          source venv/bin/activate
-          pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r training/requirements.txt
 
       - name: Pull and preprocess data
         run: |
@@ -103,3 +79,14 @@ jobs:
         run: |
           source venv/bin/activate
           dvc repro validate
+
+      - name: Upload model
+        uses: actions/upload-artifact@v4
+        with:
+          name: model
+          path: models/baseline_model.h5
+
+      - name: Cleanup credentials
+        if: always()
+        run: |
+          rm -f .dvc/tmp/gdrive-credentials.json
