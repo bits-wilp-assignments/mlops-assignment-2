@@ -13,7 +13,7 @@ on:
     - cron: '0 2 * * 0'  # Weekly on Sunday
 
 env:
-  MLFLOW_TRACKING_URI: https://joint-hookworm-suitable.ngrok-free.app
+  MLFLOW_TRACKING_URI: http://localhost:5050
 
 jobs:
   test-and-train:
