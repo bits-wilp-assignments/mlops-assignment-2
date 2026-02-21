@@ -22,11 +22,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          clean: false
 
-      - name: Clean up DVC locks
+      - name: Clean up stale files
         run: |
-          rm -f .dvc/tmp/lock
-          rm -f .dvc/tmp/rwlock*
+          # Remove DVC locks
+          rm -f .dvc/tmp/lock .dvc/tmp/rwlock*
+          # Remove Python cache
+          find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+          find . -type f -name "*.pyc" -delete 2>/dev/null || true
 
       - name: Verify Python version
         run: python --version
