@@ -25,6 +25,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Python 3.12.0 via pyenv
+        run: |
+          eval "$(pyenv init -)"
+          if ! pyenv versions | grep -q '3.12.0'; then
+            pyenv install 3.12.0
+          fi
+
       - name: Set up Python environment
         run: |
           eval "$(pyenv init -)"
@@ -53,6 +60,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Python 3.12.0 via pyenv
+        run: |
+          eval "$(pyenv init -)"
+          if ! pyenv versions | grep -q '3.12.0'; then
+            pyenv install 3.12.0
+          fi
 
       - name: Set up Python environment
         run: |
