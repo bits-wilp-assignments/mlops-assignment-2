@@ -62,6 +62,11 @@ mlruns/
 models/
 test/training/plots/
 
+# DVC pipeline outputs
+data/processed/
+.mlflow_run_id
+.test_passed
+
 # Model outputs
 *.pkl
 *.png

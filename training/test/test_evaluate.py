@@ -25,32 +25,33 @@ def test_classification_metrics():
     assert 0 <= acc <= 1, "Accuracy should be between 0 and 1"
 
 
-@patch('training.src.model.evaluate.get_generators')
-@patch('training.src.model.evaluate.load_model')
-def test_evaluate_model_without_mlflow(mock_load_model, mock_get_generators):
+def test_evaluate_model_without_mlflow():
     """Test model evaluation function without MLflow logging."""
     # Mock the test generator
     mock_test_gen = MagicMock()
     mock_test_gen.classes = np.array([0, 1, 0, 1, 1, 0])
-    mock_get_generators.return_value = (None, None, mock_test_gen)
 
     # Mock the model
     mock_model = MagicMock()
     mock_predictions = np.array([[0.2], [0.8], [0.3], [0.7], [0.9], [0.1]])
     mock_model.predict.return_value = mock_predictions
-    mock_load_model.return_value = mock_model
 
-    # Run evaluation without MLflow
-    y_true, y_pred_binary, y_pred_proba = evaluate_model(model_path=MODEL_PATH, log_mlflow=False)
+    # Run evaluation
+    metrics, y_true, y_pred, y_pred_proba = evaluate_model(mock_model, mock_test_gen)
 
     # Verify results
     assert len(y_true) == 6, "Should have 6 true labels"
-    assert len(y_pred_binary) == 6, "Should have 6 binary predictions"
+    assert len(y_pred) == 6, "Should have 6 binary predictions"
     assert len(y_pred_proba) == 6, "Should have 6 probability predictions"
-    assert np.all(np.isin(y_pred_binary, [0, 1])), "Predictions should be binary (0 or 1)"
+    assert np.all(np.isin(y_pred, [0, 1])), "Predictions should be binary (0 or 1)"
     assert np.all((y_pred_proba >= 0) & (y_pred_proba <= 1)), "Probabilities should be between 0 and 1"
+    
+    # Verify metrics dictionary contains expected keys
+    assert 'test_accuracy' in metrics, "Metrics should contain test_accuracy"
+    assert 'test_precision' in metrics, "Metrics should contain test_precision"
+    assert 'test_recall' in metrics, "Metrics should contain test_recall"
+    assert 'test_f1_score' in metrics, "Metrics should contain test_f1_score"
 
-    # Verify model was loaded and used
-    mock_load_model.assert_called_once_with(MODEL_PATH)
+    # Verify model was used
     mock_model.predict.assert_called_once()
 

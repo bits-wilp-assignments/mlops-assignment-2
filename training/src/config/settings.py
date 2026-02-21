@@ -24,10 +24,5 @@ USE_MIXED_PRECISION = False  # Enable for faster training on GPUs (Metal/CUDA)
 # Model saving
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILENAME)
 
-# MLflow run names
-MLFLOW_RUN_NAME_PIPELINE = 'pipeline'
-MLFLOW_RUN_NAME_TRAINING = 'training'
-MLFLOW_RUN_NAME_EVALUATION = 'evaluation'
-
+MLFLOW_RUN_NAME_PREFIX = "pipeline"
 VALIDATION_METRIC_NAME = 'test_accuracy'  # Metric to use for validation gate comparison
-
