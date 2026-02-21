@@ -1,5 +1,14 @@
+from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
-from serving.src.api.main import app
+
+# Mock the Predictor before importing main
+mock_predictor = Mock()
+mock_predictor.model_name = "pet-classification-model"
+mock_predictor.model_alias = "champion"
+mock_predictor.predict.return_value = {"label": "Cat", "probability": 0.95}
+
+with patch('serving.src.api.main.Predictor', return_value=mock_predictor):
+    from serving.src.api.main import app
 
 client = TestClient(app)
 
@@ -15,11 +24,10 @@ def test_health():
     assert data["model_alias"] == "champion"
 
 def test_predict_endpoint():
-    """Test predict endpoint with an image file"""
-    # Read a test image
-    with open("data/processed/test/Cat/3.jpg", "rb") as img_file:
-        files = {"file": ("test_cat.jpg", img_file, "image/jpeg")}
-        response = client.put("/predict", files=files)
+    """Test predict endpoint with mock predictor"""
+    # Create a dummy file for testing
+    files = {"file": ("test_cat.jpg", b"fake image content", "image/jpeg")}
+    response = client.put("/predict", files=files)
 
     assert response.status_code == 200
     data = response.json()
