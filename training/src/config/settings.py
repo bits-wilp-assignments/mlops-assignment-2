@@ -26,4 +26,3 @@ MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILENAME)
 
 MLFLOW_RUN_NAME_PREFIX = "pipeline"
 VALIDATION_METRIC_NAME = 'test_accuracy'  # Metric to use for validation gate comparison
-

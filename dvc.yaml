@@ -37,7 +37,7 @@ stages:
     outs:
       - models/baseline_model.h5:
           cache: true   # Cache locally
-          push: true    # BACKUP to Google Drive (This is your valuable result)
+          push: false    # DO NOT upload the model weights to GDrive (Already tracked by MLflow)
       - .mlflow_run_id:
           cache: false  # Keep in Git
 
@@ -50,4 +50,5 @@ stages:
     params:
       - training/src/config/settings.py:
           - VALIDATION_METRIC_NAME
+      - common/base.py:
           - REGISTERED_MODEL_NAME
