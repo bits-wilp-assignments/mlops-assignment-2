@@ -1,0 +1,103 @@
+schema: '2.0'
+stages:
+  test:
+    cmd: pytest training/test/ -v --tb=short && touch .test_passed
+    deps:
+    - path: training/src/
+      hash: md5
+      md5: 86bdf633dc0b4739e51a366ef983bff6.dir
+      size: 19369
+      nfiles: 10
+    - path: training/test/
+      hash: md5
+      md5: e8d2359263c9c62bf18ec98fb21bc046.dir
+      size: 9598
+      nfiles: 5
+    outs:
+    - path: .test_passed
+      hash: md5
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+  preprocess:
+    cmd: python -m training.src.data.preprocess
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 8467ce11580412ec0b77ca194007550a.dir
+      size: 848866410
+      nfiles: 24998
+    - path: training/src/data/preprocess.py
+      hash: md5
+      md5: 3ece665f1b7d9caf0f272b9b2b21aa41
+      size: 3918
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: 8214c58d0357a25384e2d290531e032b.dir
+      size: 258092967
+      nfiles: 24998
+  train:
+    cmd: python -m training.src.model.train
+    deps:
+    - path: .test_passed
+      hash: md5
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+    - path: data/processed
+      hash: md5
+      md5: 8214c58d0357a25384e2d290531e032b.dir
+      size: 258092967
+      nfiles: 24998
+    - path: training/src/data/preprocess.py
+      hash: md5
+      md5: 3ece665f1b7d9caf0f272b9b2b21aa41
+      size: 3918
+    - path: training/src/model/evaluate.py
+      hash: md5
+      md5: 9b31d9ad9326b922010b1a7b5421a56d
+      size: 1652
+    - path: training/src/model/train.py
+      hash: md5
+      md5: 678110c46a07c1a334eebee1ddc86494
+      size: 10170
+    - path: training/test/
+      hash: md5
+      md5: e8d2359263c9c62bf18ec98fb21bc046.dir
+      size: 9598
+      nfiles: 5
+    params:
+      training/src/config/settings.py:
+        BATCH_SIZE: 32
+        EPOCHS: 5
+        LOSS_FUNCTION: binary_crossentropy
+        OPTIMIZER: adam
+        USE_MIXED_PRECISION: false
+    outs:
+    - path: .mlflow_run_id
+      hash: md5
+      md5: 739ad3c2411598a4c5a71ebf04b8ac99
+      size: 32
+    - path: models/baseline_model.h5
+      hash: md5
+      md5: 50a3c24aaaaab08d7aaa9648daa55534
+      size: 116207000
+  validate:
+    cmd: python -m training.src.model.validate --run-id $(cat .mlflow_run_id)
+    deps:
+    - path: .mlflow_run_id
+      hash: md5
+      md5: 739ad3c2411598a4c5a71ebf04b8ac99
+      size: 32
+    - path: models/baseline_model.h5
+      hash: md5
+      md5: 50a3c24aaaaab08d7aaa9648daa55534
+      size: 116207000
+    - path: training/src/model/validate.py
+      hash: md5
+      md5: 017507e82c5b747af3982d3e7d5b4c64
+      size: 2728
+    params:
+      common/base.py:
+        REGISTERED_MODEL_NAME: pet-classification-model
+      training/src/config/settings.py:
+        VALIDATION_METRIC_NAME: test_accuracy

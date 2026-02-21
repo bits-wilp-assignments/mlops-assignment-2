@@ -38,7 +38,7 @@ class TestValidationGate:
         mock_mlflow.register_model.return_value = mock_model_version
 
         # Execute
-        promoted = validation_gate(challenger_run_id="run_456")
+        promoted = validation_gate(run_id="run_456")
 
         # Assert
         assert promoted is True
@@ -69,7 +69,7 @@ class TestValidationGate:
         mock_client.get_run.side_effect = [mock_prod_run, mock_challenger_run]
 
         # Execute
-        promoted = validation_gate(challenger_run_id="run_456")
+        promoted = validation_gate(run_id="run_456")
 
         # Assert
         assert promoted is False
@@ -97,7 +97,7 @@ class TestValidationGate:
         mock_mlflow.register_model.return_value = mock_model_version
 
         # Execute
-        promoted = validation_gate(challenger_run_id="run_456")
+        promoted = validation_gate(run_id="run_456")
 
         # Assert
         assert promoted is True

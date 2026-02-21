@@ -1,3 +1,30 @@
-# Add patterns of files dvc should ignore, which could improve
-# the performance. Learn more at
-# https://dvc.org/doc/user-guide/dvcignore
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# Python internal files
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# macOS system files
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
+
+# Testing
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+
+# MLflow local metadata (if you don't want DVC tracking the local DB)
+mlruns/
