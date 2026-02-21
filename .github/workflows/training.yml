@@ -21,20 +21,14 @@ jobs:
     runs-on: self-hosted
     env:
       PYENV_ROOT: ${{ github.workspace }}/.pyenv_temp
-    
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python environment
         run: |
           eval "$(pyenv init -)"
-          # Find and use any Python 3.12.x version
-          PYTHON_VERSION=$(pyenv versions --bare | grep "^3\.12\." | head -n 1)
-          if [ -z "$PYTHON_VERSION" ]; then
-            echo "No Python 3.12.x version found in pyenv"
-            exit 1
-          fi
-          pyenv global "$PYTHON_VERSION"
+          pyenv global 3.12.0
           python --version
 
       - name: Install dependencies
@@ -63,13 +57,7 @@ jobs:
       - name: Set up Python environment
         run: |
           eval "$(pyenv init -)"
-          # Find and use any Python 3.12.x version
-          PYTHON_VERSION=$(pyenv versions --bare | grep "^3\.12\." | head -n 1)
-          if [ -z "$PYTHON_VERSION" ]; then
-            echo "No Python 3.12.x version found in pyenv"
-            exit 1
-          fi
-          pyenv global "$PYTHON_VERSION"
+          pyenv global 3.12.0
           python --version
 
       - name: Install dependencies
