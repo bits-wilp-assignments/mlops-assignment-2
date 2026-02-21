@@ -10,7 +10,7 @@
 # --- MAC SETUP ---
 # Installs base engine + Apple's GPU bridge
 tensorflow==2.18.0; sys_platform == 'darwin'
-tensorflow-metal==1.1.0; sys_platform == 'darwin'
+tensorflow-metal==1.2.0; sys_platform == 'darwin'
 
 # --- LINUX/WINDOWS SETUP ---
 # Installs base engine + NVIDIA libraries (CUDA/cuDNN) bundled in
