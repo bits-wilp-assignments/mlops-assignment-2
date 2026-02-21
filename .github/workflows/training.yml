@@ -26,6 +26,13 @@ jobs:
       - name: Verify Python version
         run: python --version
 
+      - name: Cache virtual environment
+        uses: actions/cache@v4
+        id: cache-venv
+        with:
+          path: venv
+          key: venv-${{ runner.os }}-${{ hashFiles('requirements.txt', 'training/requirements.txt') }}
+
       - name: Create and activate virtual environment
         run: |
           if [ ! -d "venv" ]; then
@@ -36,6 +43,7 @@ jobs:
           echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
+        if: steps.cache-venv.outputs.cache-hit != 'true'
         run: |
           source venv/bin/activate
           pip install --upgrade pip
@@ -56,13 +64,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache virtual environment
+        uses: actions/cache@v4
+        id: cache-venv
+        with:
+          path: venv
+          key: venv-${{ runner.os }}-${{ hashFiles('requirements.txt', 'training/requirements.txt') }}
+
       - name: Activate virtual environment
         run: |
+          if [ ! -d "venv" ]; then
+            python -m venv venv
+          fi
           source venv/bin/activate
           echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
           echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
+        if: steps.cache-venv.outputs.cache-hit != 'true'
         run: |
           source venv/bin/activate
           pip install --upgrade pip
@@ -84,9 +103,3 @@ jobs:
         run: |
           source venv/bin/activate
           dvc repro validate
-
-      - name: Upload model
-        uses: actions/upload-artifact@v4
-        with:
-          name: model
-          path: models/baseline_model.h5
