@@ -5,15 +5,14 @@ metadata:
   namespace: pet-adoptation
   labels:
     app: pet-adoptation-api
-  annotations:
-    service.beta.kubernetes.io/azure-load-balancer-internal: "false"
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: pet-adoptation-api
   ports:
   - port: 80
     targetPort: 8000
+    nodePort: 8585
     protocol: TCP
     name: http
   sessionAffinity: ClientIP
