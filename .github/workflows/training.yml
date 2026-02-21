@@ -90,12 +90,6 @@ jobs:
           source venv/bin/activate
           dvc repro validate -v
 
-      - name: Upload model
-        uses: actions/upload-artifact@v4
-        with:
-          name: model
-          path: models/baseline_model.h5
-
       - name: Cleanup sensitive files
         if: always()
         run: |
