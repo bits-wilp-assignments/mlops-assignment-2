@@ -49,6 +49,9 @@ coverage.xml
 *.env
 *.env.*
 
+# PyDrive2 cache (for DVC Google Drive authentication)
+.pydrive2_cache/
+
 # mypy
 .mypy_cache/
 .dmypy.json
