@@ -31,7 +31,7 @@ spec:
           name: http
         env:
         - name: MLFLOW_TRACKING_URI
-          value: "http://host.docker.internal:5050"
+          value: "http://192.168.0.192:5050"
         - name: ENVIRONMENT
           value: "production"
         - name: LOG_LEVEL
