@@ -29,6 +29,13 @@ spec:
         ports:
         - containerPort: 8000
           name: http
+        env:
+        - name: MLFLOW_TRACKING_URI
+          value: "http://localhost:5050"
+        - name: ENVIRONMENT
+          value: "production"
+        - name: LOG_LEVEL
+          value: "INFO"
         resources:
           requests:
             memory: "1Gi"

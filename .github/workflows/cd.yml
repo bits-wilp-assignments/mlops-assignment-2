@@ -53,15 +53,5 @@ jobs:
           kubectl apply -f deployment/k8s/service.yaml
           kubectl apply -f deployment/k8s/hpa.yaml
 
-          # Update container image
-          kubectl set image deployment/pet-adoptation-api -n pet-adoptation \
-            pet-adoptation-api=${{ env.IMAGE_NAME }}:latest
-
-          # Set environment variables
-          kubectl set env deployment/pet-adoptation-api -n pet-adoptation \
-            MLFLOW_TRACKING_URI="${{ env.MLFLOW_TRACKING_URI }}" \
-            ENVIRONMENT="${{ env.ENVIRONMENT }}" \
-            LOG_LEVEL="${{ env.LOG_LEVEL }}"
-
           # Wait for rollout to complete
           kubectl rollout status deployment/pet-adoptation-api -n pet-adoptation --timeout=5m
