@@ -7,7 +7,7 @@ CLASS_DIRS = ["Cat", "Dog"]
 IMG_SIZE = (224, 224)
 
 # MLflow tracking - read from environment variable with fallback to localhost
-MLFLOW_TRACKING_URI = os.getenv('MLFLOW_TRACKING_URI', 'https://unwailing-interestingly-moira.ngrok-free.dev')
+MLFLOW_TRACKING_URI = os.getenv('MLFLOW_TRACKING_URI', 'http://localhost:5050')
 MLFLOW_EXPERIMENT_NAME = 'pet_adoptation_classification'
 
 # Model Registry
