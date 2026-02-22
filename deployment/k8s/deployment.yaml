@@ -31,7 +31,7 @@ spec:
           name: http
         env:
         - name: MLFLOW_TRACKING_URI
-          value: "http://192.168.0.192:5050"
+          value: "http://10.104.254.117"
         - name: ENVIRONMENT
           value: "production"
         - name: LOG_LEVEL
@@ -47,18 +47,18 @@ spec:
           httpGet:
             path: /health
             port: 8000
-          initialDelaySeconds: 300
+          initialDelaySeconds: 30
           periodSeconds: 15
           timeoutSeconds: 10
-          failureThreshold: 6
+          failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /health
             port: 8000
-          initialDelaySeconds: 300
+          initialDelaySeconds: 20
           periodSeconds: 10
           timeoutSeconds: 5
-          failureThreshold: 6
+          failureThreshold: 3
       # imagePullSecrets only needed for private Docker Hub repositories
       # For public repos, comment out or remove this section
       # imagePullSecrets:
