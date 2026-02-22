@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'training/**'
+      - 'common/**'
       - 'dvc.yaml'
       - 'data/raw.dvc'
       - '.github/workflows/training.yml'

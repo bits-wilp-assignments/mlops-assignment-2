@@ -36,6 +36,7 @@ mlops-assignment-2/
 ## Setup Instructions
 
 ### Prerequisites
+
 - Python 3.12.0
 - Docker (for containerized serving)
 - Kubernetes cluster (for production deployment)
@@ -88,6 +89,7 @@ dvc remote modify myremote gdrive_service_account_json_file_path .dvc/tmp/gdrive
 **Authentication Options:**
 
 1. **Interactive OAuth (Local Development):**
+
    ```bash
    # First time: DVC will prompt you to authenticate via browser
    dvc pull data/raw.dvc
@@ -95,11 +97,12 @@ dvc remote modify myremote gdrive_service_account_json_file_path .dvc/tmp/gdrive
    ```
 
 2. **Service Account (CI/CD):**
+
    ```bash
    # Create a service account in Google Cloud Console
    # Download the JSON key file
    # Store it as a GitHub secret: GDRIVE_CREDENTIALS_DATA
-   
+
    # In CI/CD, the credentials are automatically configured:
    mkdir -p .dvc/tmp
    echo "$GDRIVE_CREDENTIALS_DATA" > .dvc/tmp/gdrive-sa.json
@@ -122,6 +125,7 @@ git commit -m "Update raw dataset"
 ```
 
 **Data Structure:**
+
 ```
 data/raw/PetImages/
 ├── Cat/          # ~12,500 cat images
@@ -137,6 +141,7 @@ data/raw/PetImages/
 **Manual Setup (Alternative):**
 
 If you prefer not to use DVC:
+
 ```bash
 # Download the Kaggle dataset: Dogs vs. Cats
 # https://www.microsoft.com/en-us/download/details.aspx?id=54765
@@ -195,6 +200,7 @@ pytest training/test/test_validate.py -v
 ### Training Configuration
 
 Edit `training/src/config/settings.py`:
+
 ```python
 BATCH_SIZE = 32
 EPOCHS = 5
@@ -213,6 +219,7 @@ VALIDATION_METRIC_NAME = 'test_accuracy'
 **Workflow**: `.github/workflows/ci.yml`
 
 **Jobs**:
+
 1. Run serving tests with pytest
 2. Build Docker image
 3. Push to Docker Hub (on main branch only)
@@ -231,6 +238,7 @@ docker build -f serving/Dockerfile -t pet-adoptation-api .
 **Workflow**: `.github/workflows/training.yml`
 
 **Jobs**:
+
 1. Run training tests
 2. Pull data with DVC
 3. Execute DVC pipeline (preprocess → train → validate)
@@ -249,6 +257,7 @@ dvc repro
 **Workflow**: `.github/workflows/cd.yml`
 
 **Jobs**:
+
 1. Deploy to Kubernetes cluster
 2. Apply all manifests (namespace, deployment, service, HPA, PDB)
 3. Wait for rollout completion
@@ -319,6 +328,7 @@ curl http://localhost:8000/health
 ```
 
 **Response**:
+
 ```json
 {
   "status": "ok",
@@ -339,6 +349,7 @@ curl -X PUT http://localhost:8000/predict \
 ```
 
 **Response**:
+
 ```json
 {
   "label": "Cat",
@@ -357,6 +368,7 @@ curl http://localhost:8000/metrics
 ```
 
 **Metrics exposed**:
+
 - `http_requests_total` - Total HTTP requests
 - `http_request_duration_seconds` - Request duration histogram
 
@@ -364,10 +376,11 @@ curl http://localhost:8000/metrics
 
 FastAPI automatically generates interactive API documentation:
 
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+- **Swagger UI**: <http://localhost:8000/docs>
+- **ReDoc**: <http://localhost:8000/redoc>
 
 These interfaces allow you to:
+
 - Explore all available endpoints
 - Test API calls directly from the browser
 - View request/response schemas
@@ -380,6 +393,7 @@ These interfaces allow you to:
 The smoke tests provide quick end-to-end validation of the deployed serving API to ensure it's functioning correctly in production or staging environments.
 
 **Prerequisites:**
+
 - API server must be running on `http://localhost:8000`
 - Sample test image must exist at `data/raw/PetImages/Cat/cat.0.jpg`
 
@@ -398,7 +412,7 @@ python smoketest.py
 1. **Health Check Test** (`test_health`)
    - **Purpose**: Verifies API is running and responsive
    - **Endpoint**: `GET /health`
-   - **Validation**: 
+   - **Validation**:
      - Status code is 200
      - Response contains model information
    - **Success Criteria**: API returns healthy status
@@ -415,6 +429,7 @@ python smoketest.py
    - **Success Criteria**: Image is correctly classified
 
 **Expected Output:**
+
 ```
 Health OK
 Prediction OK {'label': 'Cat', 'probability': 0.987}
@@ -463,28 +478,11 @@ if __name__ == "__main__":
 **CI/CD Integration:**
 
 Smoke tests are typically run:
+
 - After deployment to staging/production
 - As part of the CD pipeline health check
 - Before routing production traffic to new deployments
 - In Kubernetes readiness probes
-
-**Troubleshooting:**
-
-- **Connection Refused**: Ensure API server is running on port 8000
-- **404 Not Found**: Check endpoint paths match API routes
-- **500 Server Error**: Verify MLflow model is accessible and loaded
-- **File Not Found**: Ensure test image exists at specified path
-
-## Key Features
-
-- ✅ **DVC Pipeline**: Reproducible training workflow with data versioning
-- ✅ **MLflow Integration**: Experiment tracking and model registry
-- ✅ **Model Validation Gate**: Automatic champion model promotion based on metrics
-- ✅ **FastAPI Serving**: Production-ready REST API with auto-documentation
-- ✅ **Prometheus Metrics**: Request monitoring and observability
-- ✅ **Kubernetes Ready**: Scalable deployment with HPA and PDB
-- ✅ **CI/CD Automation**: GitHub Actions for testing and deployment
-- ✅ **Comprehensive Testing**: Unit tests for training and serving modules
 
 ## MLflow Tracking
 
@@ -495,7 +493,8 @@ Models are automatically tracked and versioned:
 - **Registered Model**: `pet-classification-model`
 - **Production Alias**: `champion` (promoted via validation gate)
 
-Access MLflow UI at http://localhost:5050 to:
+Access MLflow UI at <http://localhost:5050> to:
+
 - Compare experiment runs
 - View metrics and parameters
 - Manage model versions
