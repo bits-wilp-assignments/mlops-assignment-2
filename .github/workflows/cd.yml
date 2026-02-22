@@ -54,4 +54,4 @@ jobs:
           kubectl apply -f deployment/k8s/hpa.yaml
 
           # Wait for rollout to complete
-          kubectl rollout status deployment/pet-adoptation-api -n pet-adoptation --timeout=5m
+          kubectl rollout status deployment/pet-adoptation-api -n pet-adoptation --timeout=15m
